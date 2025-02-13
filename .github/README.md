@@ -30,7 +30,7 @@ This extension provides the Codam header integration in Neovim. The original 42 
 
 ```lua
 use {
-  "f-ras/codam-header.nvim",
+  "BeerB34r/codam-header.nvim",
   cmd = { "Stdheader" },
   config = function()
     require "codamheader"setup {
@@ -53,7 +53,7 @@ Create a file 'codam-header.lua' in ~/.config/nvim/plugins/ with the following c
 
 ```lua
 return {
-  "f-ras/codam-header.nvim",
+  "BeerB34r/codam-header.nvim",
   cmd = { "Stdheader" },
   keys = { "<F1>" },
   opts = {
@@ -100,6 +100,10 @@ return {
     ---Use global user.email, otherwise use local user.email.
     email_global = true,
   },
+  exascii = {
+    "---", "---", ...
+  },
+  exascii_left = false --left-justified?
 }
 ```
 
@@ -113,3 +117,5 @@ vim.g.mail = "your@mail.com"
 ```
 
 > **_NOTE:_** The order of priority: `global variables` > `git config (if support enabled)` > `user config`.
+
+## big-ups to @f-ras, i mostly just edited his plugin to add a tiny change my little goblin mind concocted.
