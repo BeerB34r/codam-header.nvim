@@ -25,7 +25,7 @@ end
 ---Get left and right comment symbols from the buffer.
 ---@return string, string
 function M.comment_symbols()
-  local str = vim.api.nvim_buf_get_option(0, "commentstring")
+  local str = vim.api.nvim_get_option_value("commentstring", { scope = "local", buf = 0 })
 
   -- Checks the buffer has a valid commentstring.
   if str:find "%%s" then
@@ -58,6 +58,20 @@ function M.gen_line(text, ascii)
   return left .. left_margin .. text .. spaces .. ascii .. right_margin .. right
 end
 
+
+---generate extended ascii art
+---@param ascii table: a table of strings to be turned into ascii art
+---@return table: a table containing all lines of extended ascii art
+function M.gen_ascii(ascii)
+	local extended_ascii = {}
+
+	for _, value in pairs(ascii) do
+		table.insert(extended_ascii, M.gen_line(value, ""))
+	end
+
+	return extended_ascii
+end
+
 ---Generate a complete header.
 ---@return table: A table ontaining all lines of header.
 function M.gen_header()
@@ -66,6 +80,7 @@ function M.gen_header()
   local fill_line = left .. " " .. string.rep("*", config.opts.length - #left - #right - 2) .. " " .. right
   local empty_line = M.gen_line("", "")
   local date = os.date "%Y/%m/%d %H:%M:%S"
+	local extended_ascii = M.gen_ascii(config.opts.exascii)
 
   return {
     fill_line,
@@ -78,6 +93,7 @@ function M.gen_header()
     M.gen_line("Created: " .. date .. " by " .. M.user(), ascii[6]),
     M.gen_line("Updated: " .. date .. " by " .. M.user(), ascii[7]),
     empty_line,
+		table.unpack(extended_ascii),
     fill_line,
   }
 end
@@ -101,7 +117,7 @@ end
 ---Insert a header into the current buffer.
 ---@param header table: The header to insert.
 function M.insert_header(header)
-  if not vim.api.nvim_buf_get_option(0, "modifiable") then
+  if not vim.api.nvim_get_option_value("modifiable", { buf = 0 }) then
     vim.notify("The current buffer cannot be modified.", vim.log.levels.WARN, { title = "Codam Header" })
     return
   end
