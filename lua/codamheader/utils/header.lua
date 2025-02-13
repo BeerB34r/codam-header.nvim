@@ -25,7 +25,7 @@ end
 ---Get left and right comment symbols from the buffer.
 ---@return string, string
 function M.comment_symbols()
-  local str = vim.api.nvim_buf_get_option(0, "commentstring")
+  local str = vim.api.nvim_get_option_value("commentstring", { scope = "local", buf = 0 })
 
   -- Checks the buffer has a valid commentstring.
   if str:find "%%s" then
@@ -58,6 +58,33 @@ function M.gen_line(text, ascii)
   return left .. left_margin .. text .. spaces .. ascii .. right_margin .. right
 end
 
+
+---generate extended ascii art
+---@param ascii table: a table of strings to be turned into ascii art
+---@return table: a table containing all lines of extended ascii art
+function M.gen_ascii(ascii)
+	local extended_ascii = {}
+	local left, right = M.comment_symbols()
+	local left_margin = (" "):rep(config.opts.margin - #left)
+	local right_margin  = (" "):rep(config.opts.margin - #right)
+	local left_justified = config.opts.exascii_left
+
+	for _, value in pairs(ascii) do
+		local spaces = (" "):rep((config.opts.length - vim.str_utfindex(value)) - config.opts.margin * 2)
+		if left_justified then
+			table.insert(extended_ascii, left .. left_margin .. value .. spaces .. right_margin .. right)
+		else
+			table.insert(extended_ascii, left .. left_margin .. spaces .. value .. right_margin .. right)
+		end
+		if (vim.str_utfindex(extended_ascii[#extended_ascii]) > config.opts.length) then
+			vim.notify("Extended ascii art too wide", vim.log.levels.WARN, { title = "Codam Header" })
+			return nil
+		end
+	end
+
+	return extended_ascii
+end
+
 ---Generate a complete header.
 ---@return table: A table ontaining all lines of header.
 function M.gen_header()
@@ -67,7 +94,9 @@ function M.gen_header()
   local empty_line = M.gen_line("", "")
   local date = os.date "%Y/%m/%d %H:%M:%S"
 
-  return {
+	local extended_ascii = M.gen_ascii(config.opts.exascii)
+
+	local out = {
     fill_line,
     empty_line,
     M.gen_line("", ascii[1]),
@@ -78,19 +107,24 @@ function M.gen_header()
     M.gen_line("Created: " .. date .. " by " .. M.user(), ascii[6]),
     M.gen_line("Updated: " .. date .. " by " .. M.user(), ascii[7]),
     empty_line,
-    fill_line,
   }
+	for _, value in pairs(extended_ascii) do
+		table.insert(out, value)
+	end
+	table.insert(out, fill_line)
+	return out
 end
 
 ---Checks if there is a valid header in the current buffer.
 ---@param header table: The header to compare with the contents of the existing buffer.
 ---@return boolean: `true` if the header exists, `false` otherwise.
 function M.has_header(header)
-  local lines = vim.api.nvim_buf_get_lines(0, 0, 11, false)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, #header, false)
 
   -- Immutable lines that are used for checking.
-  for _, v in pairs { 1, 2, 3, 10, 11 } do
+  for _, v in pairs { 1, 2, 3, 10, #header } do
     if header[v] ~= lines[v] then
+			print ("header:" .. header[v] .. "\n" .. "lines: ".. lines[v] .. "\nv = " .. v)
       return false
     end
   end
@@ -101,7 +135,7 @@ end
 ---Insert a header into the current buffer.
 ---@param header table: The header to insert.
 function M.insert_header(header)
-  if not vim.api.nvim_buf_get_option(0, "modifiable") then
+  if not vim.api.nvim_get_option_value("modifiable", { buf = 0 }) then
     vim.notify("The current buffer cannot be modified.", vim.log.levels.WARN, { title = "Codam Header" })
     return
   end
@@ -123,7 +157,7 @@ function M.update_header(header)
     header[value] = vim.api.nvim_buf_get_lines(0, value - 1, value, false)[1]
   end
 
-  vim.api.nvim_buf_set_lines(0, 0, 11, false, header)
+  vim.api.nvim_buf_set_lines(0, 0, #header, false, header)
 end
 
 ---Inserts or updates the header in the current buffer.
