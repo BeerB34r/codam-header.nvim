@@ -124,7 +124,6 @@ function M.has_header(header)
   -- Immutable lines that are used for checking.
   for _, v in pairs { 1, 2, 3, 10, #header } do
     if header[v] ~= lines[v] then
-			print ("header:" .. header[v] .. "\n" .. "lines: ".. lines[v] .. "\nv = " .. v)
       return false
     end
   end
